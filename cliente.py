@@ -6,7 +6,7 @@ import json
 ruta_protos = os.path.abspath(os.path.join(os.path.dirname(__file__), 'protos'))
 sys.path.append(ruta_protos)
 
-import puerta_enlace_pb2, puerta_enlace_pb2_grpc
+import orquestador_pb2, orquestador_pb2_grpc
 
 TOKEN = None
 ROL = None
@@ -16,8 +16,8 @@ def imprimir_titulo(texto):
     print(f"\n{'='*45}\n {texto.center(43)} \n{'='*45}")
 
 def enviar_comando_crudo(canal, tipo, comando):
-    cliente = puerta_enlace_pb2_grpc.ServicioGatewayStub(canal)
-    peticion = puerta_enlace_pb2.PeticionComandoGateway(token=TOKEN, tipo=tipo, comando=comando)
+    cliente = orquestador_pb2_grpc.ServicioOrquestadorStub(canal)
+    peticion = orquestador_pb2.PeticionComandoOrquestador(token=TOKEN, tipo=tipo, comando=comando)
     respuesta = cliente.EnviarComando(peticion)
     
     if respuesta.exito:
@@ -101,7 +101,7 @@ def consola_sql(canal):
 def main():
     global TOKEN, ROL, USUARIO
     with grpc.insecure_channel('localhost:50050') as canal:
-        cliente = puerta_enlace_pb2_grpc.ServicioGatewayStub(canal)
+        cliente = orquestador_pb2_grpc.ServicioOrquestadorStub(canal)
         
         while True:
             if not TOKEN:
@@ -112,7 +112,7 @@ def main():
                 if op_ini == '1':
                     u = input("Usuario: ")
                     p = input("Contrasena: ")
-                    res = cliente.Login(puerta_enlace_pb2.PeticionLoginGateway(usuario=u, password=p))
+                    res = cliente.Login(orquestador_pb2.PeticionLoginOrquestador(usuario=u, password=p))
                     if res.exito:
                         TOKEN = res.token
                         ROL = res.rol
@@ -124,8 +124,7 @@ def main():
                     print("\n--- NUEVA CUENTA DE ADMINISTRADOR ---")
                     u = input("Nuevo Usuario: ")
                     p = input("Contrasena: ")
-                    # Por defecto se asigna rol administrador
-                    res = cliente.Registro(puerta_enlace_pb2.PeticionRegistroGateway(usuario=u, password=p, rol="administrador"))
+                    res = cliente.Registro(orquestador_pb2.PeticionRegistroOrquestador(usuario=u, password=p, rol="administrador", creador=""))
                     print(f"[EXITO] {res.mensaje}" if res.exito else f"[ERROR] {res.mensaje}")
                 elif op_ini == '3': sys.exit()
                 
@@ -154,7 +153,8 @@ def main():
                     print("Roles: 1. Escritura | 2. Lectura")
                     r_opc = input("Selecciona el numero: ")
                     rol_emp = "usuario_escritura" if r_opc == "1" else "usuario_lectura"
-                    res = cliente.Registro(puerta_enlace_pb2.PeticionRegistroGateway(
+                    
+                    res = cliente.Registro(orquestador_pb2.PeticionOrquestador(
                         usuario=emp_u, 
                         password=emp_p, 
                         rol=rol_emp, 

@@ -10,7 +10,7 @@ message PeticionAdmin {
   string accion = 1;       
   string base_datos = 2;   
   string tabla = 3;        
-  string usuario = 4;      // El dueño de la accion
+  string usuario = 4; 
 }
 
 message RespuestaAdmin {
