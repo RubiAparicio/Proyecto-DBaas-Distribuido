@@ -1,0 +1,12 @@
+{
+    "eduardo": {
+        "password": "123",
+        "rol": "administrador",
+        "creador": "eduardo"
+    },
+    "juan": {
+        "password": "123",
+        "rol": "usuario_escritura",
+        "creador": "eduardo"
+    }
+}

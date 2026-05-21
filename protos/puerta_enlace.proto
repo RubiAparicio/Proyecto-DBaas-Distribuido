@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package puerta_enlace;
+
+service ServicioGateway {
+  rpc Login (PeticionLoginGateway) returns (RespuestaLoginGateway);
+  rpc Registro (PeticionRegistroGateway) returns (RespuestaRegistroGateway);
+  rpc EnviarComando (PeticionComandoGateway) returns (RespuestaComandoGateway);
+}
+
+message PeticionLoginGateway {
+  string usuario = 1;
+  string password = 2;
+}
+
+message RespuestaLoginGateway {
+  bool exito = 1;
+  string token = 2;
+  string rol = 3;
+  string mensaje = 4;
+}
+
+message PeticionRegistroGateway {
+  string usuario = 1;
+  string password = 2;
+  string rol = 3;
+  string creador = 4;
+}
+
+message RespuestaRegistroGateway {
+  bool exito = 1;
+  string mensaje = 2;
+}
+
+message PeticionComandoGateway {
+  string token = 1;
+  string tipo = 2; // "SQL" o "JSON"
+  string comando = 3;
+}
+
+message RespuestaComandoGateway {
+  bool exito = 1;
+  string mensaje = 2;
+  string resultado = 3;
+}

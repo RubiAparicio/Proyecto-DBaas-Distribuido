@@ -1,43 +1,57 @@
-import requests, json, sys, base64
+import sys
+import os
+import grpc
+import json
 
-BASE_URL = "http://localhost:8000"
+ruta_protos = os.path.abspath(os.path.join(os.path.dirname(__file__), 'protos'))
+sys.path.append(ruta_protos)
+
+import puerta_enlace_pb2, puerta_enlace_pb2_grpc
+
 TOKEN = None
 ROL = None
+USUARIO = None
 
-def imprimir_titulo(texto): print(f"\n{'='*45}\n {texto.center(43)} \n{'='*45}")
+def imprimir_titulo(texto): 
+    print(f"\n{'='*45}\n {texto.center(43)} \n{'='*45}")
 
-def get_rol_desde_token(token):
-    payload = token.split('.')[1]
-    payload += '=' * (-len(payload) % 4)
-    return json.loads(base64.b64decode(payload)).get('role')
+def enviar_comando_crudo(canal, tipo, comando):
+    cliente = puerta_enlace_pb2_grpc.ServicioGatewayStub(canal)
+    peticion = puerta_enlace_pb2.PeticionComandoGateway(token=TOKEN, tipo=tipo, comando=comando)
+    respuesta = cliente.EnviarComando(peticion)
+    
+    if respuesta.exito:
+        print(f"[EXITO] {respuesta.mensaje}")
+        if respuesta.resultado:
+            print(f"Resultado:\n{respuesta.resultado}")
+    else:
+        print(f"{respuesta.mensaje}")
 
-def req(method, endpoint, payload=None):
-    headers = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
-    if method == 'POST': return requests.post(f"{BASE_URL}{endpoint}", json=payload, headers=headers)
-    return requests.get(f"{BASE_URL}{endpoint}", headers=headers)
-
-def menu_admin_db():
+def menu_admin_db(canal):
     while True:
-        imprimir_titulo("ADMINISTRACIÓN DE BD")
-        print("1. Crear BD\n2. Listar BDs\n3. Eliminar BD\n4. Crear Tabla\n5. Listar Tablas\n6. Eliminar Tabla\n7. Regresar")
+        imprimir_titulo("ADMINISTRACION DE BD")
+        print("1. Crear BD\n2. Listar BDs\n3. Eliminar BD")
+        print("4. Crear Tabla\n5. Eliminar Tabla\n6. Regresar")
         op = input("\nElige: ")
         
-        db = input("Nombre BD: ") if op in ['1','3','4','5','6'] else ""
-        tb = input("Nombre Tabla: ") if op in ['4','6'] else ""
+        if op == '6': break
         
-        if op == '1': print(req('POST', '/admin/create_db', {"db_name": db, "table_name": ""}).json())
-        elif op == '2': print(req('POST', '/admin/list_db', {"db_name": "", "table_name": ""}).json())
-        elif op == '3': print(req('POST', '/admin/delete_db', {"db_name": db, "table_name": ""}).json())
-        elif op == '4': print(req('POST', '/admin/create_table', {"db_name": db, "table_name": tb}).json())
-        elif op == '5': print(req('POST', '/admin/list_table', {"db_name": db, "table_name": ""}).json())
-        elif op == '6': print(req('POST', '/admin/delete_table', {"db_name": db, "table_name": tb}).json())
-        elif op == '7': break
+        db = input("Nombre BD: ") if op in ['1','3','4','5'] else ""
+        tb = input("Nombre Tabla: ") if op in ['4','5'] else ""
+        
+        if op == '1': enviar_comando_crudo(canal, "SQL", f"CREATE DATABASE {db}")
+        elif op == '2': enviar_comando_crudo(canal, "SQL", "SHOW DATABASES")
+        elif op == '3': enviar_comando_crudo(canal, "SQL", f"DROP DATABASE {db}")
+        elif op == '4': enviar_comando_crudo(canal, "SQL", f"CREATE TABLE {db}.{tb}")
+        elif op == '5': enviar_comando_crudo(canal, "SQL", f"DROP TABLE {db}.{tb}")
+        else: print("[ERROR] Opcion invalida.")
 
-def menu_nosql():
+def menu_nosql(canal):
     while True:
         imprimir_titulo(f"NoSQL JSON (Permisos: {ROL.upper()})")
         print("1. Buscar")
-        if ROL in ['admin', 'escritor']: print("2. Insertar\n3. Actualizar\n4. Eliminar")
+        if ROL in ['administrador', 'usuario_escritura']: 
+            print("2. Insertar\n3. Actualizar\n4. Eliminar")
         print("5. Regresar")
         
         op = input("\nElige: ")
@@ -47,63 +61,113 @@ def menu_nosql():
         tb = input("Tabla: ")
         
         try:
-            if op == '1': 
-                print(req('POST', '/find', {"db_name": db, "table_name": tb}).json())
-            elif op == '2' and ROL in ['admin', 'escritor']:
-                data = json.loads(input("JSON> "))
-                print(req('POST', '/insert', {"db_name": db, "table_name": tb, "data": data}).json())
-            elif op == '3' and ROL in ['admin', 'escritor']:
-                ck = input("Condición Llave: "); cv = input("Condición Valor: "); nd = json.loads(input("Nuevo JSON> "))
-                print(req('POST', '/update', {"db_name": db, "table_name": tb, "condition_key": ck, "condition_value": cv, "new_data": nd}).json())
-            elif op == '4' and ROL in ['admin', 'escritor']:
-                ck = input("Condición Llave: "); cv = input("Condición Valor: ")
-                print(req('POST', '/delete', {"db_name": db, "table_name": tb, "condition_key": ck, "condition_value": cv}).json())
-            else: print("[-] Opción o permiso denegado.")
-        except Exception as e: print(f"[-] Error: {e}")
+            if op == '1':
+                cmd = json.dumps({"db": db, "tabla": tb, "accion": "buscar", "datos": {}})
+                enviar_comando_crudo(canal, "JSON", cmd)
+                
+            elif op == '2' and ROL in ['administrador', 'usuario_escritura']:
+                data = json.loads(input("JSON a insertar (ej. {\"id\": 1, \"nombre\": \"A\"})> "))
+                cmd = json.dumps({"db": db, "tabla": tb, "accion": "insertar", "datos": data})
+                enviar_comando_crudo(canal, "JSON", cmd)
+                
+            elif op == '3' and ROL in ['administrador', 'usuario_escritura']:
+                ck = input("Condicion Llave (ej. id): ")
+                cv = input("Condicion Valor: ")
+                cv = int(cv) if cv.isdigit() else cv
+                nd = json.loads(input("Nuevos valores JSON (ej. {\"precio\": 200})> "))
+                cmd = json.dumps({"db": db, "tabla": tb, "accion": "actualizar", "datos": {"filtro": {ck: cv}, "valores": nd}})
+                enviar_comando_crudo(canal, "JSON", cmd)
+                
+            elif op == '4' and ROL in ['administrador', 'usuario_escritura']:
+                ck = input("Condicion Llave: ")
+                cv = input("Condicion Valor: ")
+                cv = int(cv) if cv.isdigit() else cv
+                cmd = json.dumps({"db": db, "tabla": tb, "accion": "eliminar", "datos": {ck: cv}})
+                enviar_comando_crudo(canal, "JSON", cmd)
+                
+            else: 
+                print("[ERROR] Opcion o permiso denegado.")
+        except Exception as e: 
+            print(f"[ERROR] JSON mal formado: {e}")
+
+def consola_sql(canal):
+    print("\n--- CONSOLA SQL ---")
+    print("Escribe 'volver' para salir.")
+    while True:
+        comando = input(f"{USUARIO}@SQL> ")
+        if comando.lower() == 'volver': break
+        if comando.strip(): enviar_comando_crudo(canal, "SQL", comando)
 
 def main():
-    global TOKEN, ROL
-    while True:
-        if not TOKEN:
-            imprimir_titulo("BIENVENIDO AL SISTEMA DBaaS")
-            # AQUÍ ESTÁ LA NUEVA OPCIÓN
-            print("1. Iniciar Sesión\n2. Registrarse (Crear Cuenta Principal)\n3. Salir")
-            op_ini = input("\nElige: ")
-            
-            if op_ini == '1':
-                res = req('POST', '/login', {"username": input("Usuario: "), "password": input("Pass: ")})
-                if res.status_code == 200: 
-                    TOKEN = res.json().get("token")
-                    ROL = get_rol_desde_token(TOKEN)
-                else: print("[-] Error de Login")
-            elif op_ini == '2':
-                u = input("Nuevo Usuario: ")
-                p = input("Contraseña: ")
-                res = req('POST', '/register_public', {"username": u, "password": p})
-                if res.status_code == 200: 
-                    print("\n[+] Cuenta creada con éxito. Ya puedes iniciar sesión con tu nuevo usuario.")
-                else: 
-                    print(f"\n[-] Error: {res.json().get('detail')}")
-            else: sys.exit()
-            
-        else:
-            imprimir_titulo(f"MENÚ PRINCIPAL ({ROL.upper()})")
-            if ROL == 'admin': print("1. Administración BD\n2. Crear Empleado (Lector/Escritor)")
-            print("3. Interfaz SQL\n4. Interfaz NoSQL\n5. Consultas (MPI)\n6. Cerrar Sesión")
-            
-            op = input("\nElige: ")
-            
-            if op == '1' and ROL == 'admin': menu_admin_db()
-            elif op == '2' and ROL == 'admin':
-                res = req('POST', '/register', {"username": input("Usuario: "), "password": input("Pass: "), "role": input("Rol (escritor/lector): ")})
-                print(res.json())
-            elif op == '3':
-                q = input("SQL> ")
-                print(req('POST', '/sql', {"query": q}).json())
-            elif op == '4': menu_nosql()
-            elif op == '5':
-                print(req('POST', '/query', {"db_name": input("BD: "), "table_name": input("Tabla: "), "operation": input("Operación (COUNT/SUM/JOIN..): ").upper()}).json())
-                print("[!] Revisa la consola del Worker.")
-            elif op == '6': TOKEN, ROL = None, None
+    global TOKEN, ROL, USUARIO
+    with grpc.insecure_channel('localhost:50050') as canal:
+        cliente = puerta_enlace_pb2_grpc.ServicioGatewayStub(canal)
+        
+        while True:
+            if not TOKEN:
+                imprimir_titulo("BIENVENIDO AL SISTEMA DBaaS")
+                print("1. Iniciar Sesion\n2. Registrarse (Crear cuenta principal)\n3. Salir")
+                op_ini = input("\nElige: ")
+                
+                if op_ini == '1':
+                    u = input("Usuario: ")
+                    p = input("Contrasena: ")
+                    res = cliente.Login(puerta_enlace_pb2.PeticionLoginGateway(usuario=u, password=p))
+                    if res.exito:
+                        TOKEN = res.token
+                        ROL = res.rol
+                        USUARIO = u
+                        print(f"[INFO] Autenticacion correcta.")
+                    else: print(f"[ERROR] {res.mensaje}")
+                    
+                elif op_ini == '2':
+                    print("\n--- NUEVA CUENTA DE ADMINISTRADOR ---")
+                    u = input("Nuevo Usuario: ")
+                    p = input("Contrasena: ")
+                    # Por defecto se asigna rol administrador
+                    res = cliente.Registro(puerta_enlace_pb2.PeticionRegistroGateway(usuario=u, password=p, rol="administrador"))
+                    print(f"[EXITO] {res.mensaje}" if res.exito else f"[ERROR] {res.mensaje}")
+                elif op_ini == '3': sys.exit()
+                
+            else:
+                imprimir_titulo(f"MENU PRINCIPAL ({ROL.upper()})")
+                
+                if ROL == 'administrador': 
+                    print("1. Administracion de BD")
+                    print("2. Registrar Trabajador (Lectura/Escritura)")
+                    print("3. Interfaz SQL libre")
+                    print("4. Interfaz NoSQL guiada")
+                    print("5. Cerrar Sesion")
+                else:
+                    print("1. Interfaz SQL libre")
+                    print("2. Interfaz NoSQL guiada")
+                    print("3. Cerrar Sesion")
+                
+                op = input("\nElige: ")
+                
+                if op == '1' and ROL == 'administrador': 
+                    menu_admin_db(canal)
+                elif op == '2' and ROL == 'administrador':
+                    print("\n--- REGISTRAR TRABAJADOR ---")
+                    emp_u = input("Usuario del trabajador: ")
+                    emp_p = input("Contrasena: ")
+                    print("Roles: 1. Escritura | 2. Lectura")
+                    r_opc = input("Selecciona el numero: ")
+                    rol_emp = "usuario_escritura" if r_opc == "1" else "usuario_lectura"
+                    res = cliente.Registro(puerta_enlace_pb2.PeticionRegistroGateway(
+                        usuario=emp_u, 
+                        password=emp_p, 
+                        rol=rol_emp, 
+                        creador=USUARIO
+                    ))
+                    print(f"[EXITO] {res.mensaje}" if res.exito else f"[ERROR] {res.mensaje}")
+                elif (op == '3' and ROL == 'administrador') or (op == '1' and ROL != 'administrador'): 
+                    consola_sql(canal)
+                elif (op == '4' and ROL == 'administrador') or (op == '2' and ROL != 'administrador'): 
+                    menu_nosql(canal)
+                elif (op == '5' and ROL == 'administrador') or (op == '3' and ROL != 'administrador'): 
+                    TOKEN, ROL, USUARIO = None, None, None
+                    print("[INFO] Sesion cerrada.")
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,9 @@
+{
+    "empresa": {
+        "propietario": "eduardo",
+        "tablas": [
+            "empleados",
+            "ventas"
+        ]
+    }
+}

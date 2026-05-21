@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package agregacion;
+
+service ServicioAgregacion {
+  rpc Calcular (PeticionAgregacion) returns (RespuestaAgregacion);
+}
+
+message PeticionAgregacion {
+  string operacion = 1;     // "COUNT", "SUM", "AVG"
+  string db_tabla = 2;      // Ej: "tienda_online_productos"
+  string campo = 3;         // El campo a sumar/promediar, ej: "precio"
+}
+
+message RespuestaAgregacion {
+  bool exito = 1;
+  string resultado = 2;
+  string mensaje = 3;
+}

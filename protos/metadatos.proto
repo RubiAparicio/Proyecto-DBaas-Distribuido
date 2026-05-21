@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package metadatos;
+
+service ServicioAdministracion {
+  rpc GestionarCatalogo (PeticionAdmin) returns (RespuestaAdmin);
+}
+
+message PeticionAdmin {
+  string accion = 1;       
+  string base_datos = 2;   
+  string tabla = 3;        
+  string usuario = 4;      // El dueño de la accion
+}
+
+message RespuestaAdmin {
+  bool exito = 1;
+  string mensaje = 2;
+  string datos = 3;        
+}

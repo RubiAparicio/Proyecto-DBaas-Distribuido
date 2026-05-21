@@ -1,0 +1,12 @@
+[
+    {
+        "id_ticket": 100,
+        "id_emp": 1,
+        "monto": 5000
+    },
+    {
+        "id_ticket": 101,
+        "id_emp": 1,
+        "monto": 3000
+    }
+]

@@ -1,0 +1,12 @@
+[2026-05-21 15:16:11] AUDITORÍA: Usuario eduardo ejecuto crear_db en empresa
+[2026-05-21 15:16:32] AUDITORÍA: Usuario eduardo ejecuto crear_tabla en empresa
+[2026-05-21 15:16:53] AUDITORÍA: Usuario eduardo ejecuto crear_tabla en empresa
+[2026-05-21 15:18:05] AUDITORÍA: Usuario eduardo ejecuto insertar en empresa.empleados
+[2026-05-21 15:18:19] AUDITORÍA: Usuario eduardo ejecuto insertar en empresa.ventas
+[2026-05-21 15:18:25] AUDITORÍA: Usuario eduardo ejecuto insertar en empresa.ventas
+[2026-05-21 15:18:29] AUDITORÍA: Usuario eduardo ejecuto insertar en empresa.ventas
+[2026-05-21 15:18:46] AUDITORÍA: Usuario eduardo ejecuto buscar en empresa.ventas
+[2026-05-21 15:19:03] AUDITORÍA: Usuario eduardo ejecuto actualizar en empresa.ventas
+[2026-05-21 15:19:17] AUDITORÍA: Calculo distribuido SUM en empresa.ventas
+[2026-05-21 15:22:39] AUDITORÍA: Usuario eduardo ejecuto join en empresa.empleados
+[2026-05-21 15:23:05] AUDITORÍA: Usuario eduardo ejecuto eliminar en empresa.ventas

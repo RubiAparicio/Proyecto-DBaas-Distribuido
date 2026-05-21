@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package seguridad;
+
+service ServicioSeguridad {
+  rpc IniciarSesion (PeticionLogin) returns (RespuestaToken);
+  rpc ValidarToken (PeticionValidacion) returns (RespuestaValidacion);
+  rpc RegistrarUsuario (PeticionRegistro) returns (RespuestaRegistro);
+}
+
+message PeticionLogin {
+  string usuario = 1;
+  string password = 2;
+}
+
+message RespuestaToken {
+  bool exito = 1;
+  string token = 2;         
+  string mensaje = 3;
+}
+
+message PeticionValidacion {
+  string token = 1;         
+}
+
+message RespuestaValidacion {
+  bool valido = 1;          
+  string rol = 2;           
+  string usuario = 3;
+}
+
+message PeticionRegistro {
+  string usuario = 1;
+  string password = 2;
+  string rol = 3;
+  string creador = 4;
+}
+
+message RespuestaRegistro {
+  bool exito = 1;
+  string mensaje = 2;
+}

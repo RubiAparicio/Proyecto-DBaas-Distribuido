@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package base_datos;
+
+// Definimos el servicio y sus funciones
+service ServicioAlmacenamiento {
+  rpc EjecutarConsulta (PeticionConsulta) returns (RespuestaConsulta);
+}
+
+// Estructura de los datos que la puerta de enlace le enviará al almacenamiento
+message PeticionConsulta {
+  string tabla = 1;         // Ej: "usuarios"
+  string accion = 2;        // Ej: "insertar", "buscar", "eliminar"
+  string datos_json = 3;    // Los datos en texto JSON (Ej: '{"nombre": "Eduardo"}')
+}
+
+// Estructura de la respuesta que el almacenamiento regresará
+message RespuestaConsulta {
+  bool exito = 1;           // true si salió bien, false si hubo error
+  string mensaje = 2;       // Ej: "Registro insertado con éxito"
+  string resultado = 3;     // Si se hizo un "buscar", aquí regresamos los datos
+}
