@@ -5,6 +5,8 @@
 ### Integrantes:
 - Aparicio Rosas Rubi - 202213444
 - Carmona Torreblanca Eduardo Isaí - 202237115
+- Gutierrez Paz Guadalupe Alondra - 202226959
+- Salazar Huerta Guadalupe - 202158692
 
 ## Descripción
 
