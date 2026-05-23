@@ -29,7 +29,7 @@ El sistema estará compuesto por varios microservicios:
 ## 2. Preparación Crítica de la Red
 
 - Conectar las 5 computadoras a la misma red local (Wi-Fi o LAN).
-- Apagar el Firewall de Windows Defender en las 5 máquinas (red pública y privada) o configurar los piertos necesarios para permitir el tráfico de gRPC a través de los puertos asignados.
+- Apagar el Firewall de Windows Defender en las 5 máquinas (red pública y privada) o configurar los puertos necesarios para permitir el tráfico de gRPC a través de los puertos asignados.
 
 ## Mapa de Nodos y Puertos
 
